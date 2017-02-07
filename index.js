@@ -1,9 +1,14 @@
 
+/* global __dirname */
+
 var AWS = require('aws-sdk');
 var CfnLambda = require('cfn-lambda');
 
 var LogGroups = new AWS.CloudWatchLogs({apiVersion: '2014-03-28'});
 
+/**
+ * Create the exports
+ */
 exports.handler = CfnLambda({
   Create: function(params, reply) {
     reply(null, toPhysicalId(params), {});
@@ -16,12 +21,25 @@ exports.handler = CfnLambda({
 });
 
 
+/**
+ * Delete function ....
+ * 
+ * @param {type} physicalId
+ * @param {type} params
+ * @param {type} reply
+ * @return {undefined}
+ */
 function Delete(physicalId, params, reply) {
 
   var pageSize = 50;
   var matchingLogGroupNames = [];
   collectMatchingGroups();
 
+  /**
+   * Find the matching log groups
+   * @param {type} nextToken
+   * @return {undefined}
+   */
   function collectMatchingGroups(nextToken) {
     console.log('Scanning for matching log groups: %s', params.LogGroupNamePrefix);
     LogGroups.describeLogGroups({
@@ -47,6 +65,11 @@ function Delete(physicalId, params, reply) {
     });
   }
 
+  /**
+   * Manipulate the groups ...
+   * 
+   * @return {undefined}
+   */
   function manipulateGroups() {
     console.log('Manipulating log groups.');
     var message = params.RetentionInDays
@@ -67,6 +90,12 @@ function Delete(physicalId, params, reply) {
   }
 }
 
+/**
+ * Update policy with days ...
+ * 
+ * @param {type} numberOfDays
+ * @return {Function}
+ */
 function updateWithDays(numberOfDays) {
   return function(logGroup) {
     return function(callback) {
@@ -85,6 +114,12 @@ function updateWithDays(numberOfDays) {
   };
 }
 
+/**
+ * Delete the log group ...
+ * 
+ * @param {type} logGroup
+ * @return {Function}
+ */
 function deleteGroup(logGroup) {
   return function(callback) {
     LogGroups.deleteLogGroup({
@@ -100,6 +135,12 @@ function deleteGroup(logGroup) {
   };
 }
 
+/**
+ * 
+ * @param {type} actionSet
+ * @param {type} callback
+ * @return {unresolved}
+ */
 function asyncMap(actionSet, callback) {
   var results = [];
   var failed = false;
@@ -125,6 +166,11 @@ function asyncMap(actionSet, callback) {
   });
 }
 
+/**
+ * 
+ * @param {type} params
+ * @return {String}
+ */
 function toPhysicalId(params) {
   return 'CWLGJanitor-' + params.LogGroupNamePrefix
 }
